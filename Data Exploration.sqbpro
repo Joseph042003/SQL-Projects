@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="C:/Users/sangp/OneDrive/Documents/Alex The Analyst_Tutorial/MySQL/Data Cleaning Project/Data Cleaning_SQLite.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="6334"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/><expanded_item id="4" parent="1"/></tab_structure><tab_browse><table title="CovidDeaths" custom_title="0" dock_id="2" table="4,11:mainCovidDeaths"/><dock_state state="000000ff00000000fd00000001000000020000083b000004f6fc0100000002fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000000000000000fb000000160064006f0063006b00420072006f007700730065003201000000000000083b0000014600ffffff000002590000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="CovidDeaths" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="70"/><column index="2" value="61"/><column index="3" value="93"/><column index="4" value="85"/><column index="5" value="85"/><column index="6" value="78"/><column index="7" value="69"/><column index="8" value="131"/><column index="9" value="79"/><column index="10" value="76"/><column index="11" value="138"/><column index="12" value="141"/><column index="13" value="139"/><column index="14" value="201"/><column index="15" value="148"/><column index="16" value="146"/><column index="17" value="208"/><column index="18" value="109"/><column index="19" value="77"/><column index="20" value="147"/><column index="21" value="87"/><column index="22" value="157"/><column index="23" value="139"/><column index="24" value="209"/><column index="25" value="149"/><column index="26" value="219"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1">/*
+Covid 19 Data Exploration 
+Skills used: Joins, CTE's, Temp Tables, Windows Functions, Aggregate Functions, Creating Views, Correcting Data Types
+*/
+
+-- Creating a second table, having 'Date' column with the correct data type
+
+DROP TABLE IF EXISTS CovidDeaths1;
+CREATE TABLE &quot;CovidDeaths1&quot; (
+	&quot;iso_code&quot;	TEXT,
+	&quot;continent&quot;	TEXT,
+	&quot;location&quot;	TEXT,
+	&quot;date&quot;	DATE,
+	&quot;population&quot;	INTEGER,
+	&quot;total_cases&quot;	REAL,
+	&quot;new_cases&quot;	INTEGER,
+	&quot;new_cases_smoothed&quot;	TEXT,
+	&quot;total_deaths&quot;	REAL,
+	&quot;new_deaths&quot;	TEXT,
+	&quot;new_deaths_smoothed&quot;	TEXT,
+	&quot;total_cases_per_million&quot;	REAL,
+	&quot;new_cases_per_million&quot;	INTEGER,
+	&quot;new_cases_smoothed_per_million&quot;	TEXT,
+	&quot;total_deaths_per_million&quot;	TEXT,
+	&quot;new_deaths_per_million&quot;	TEXT,
+	&quot;new_deaths_smoothed_per_million&quot;	TEXT,
+	&quot;reproduction_rate&quot;	TEXT,
+	&quot;icu_patients&quot;	TEXT,
+	&quot;icu_patients_per_million&quot;	TEXT,
+	&quot;hosp_patients&quot;	TEXT,
+	&quot;hosp_patients_per_million&quot;	TEXT,
+	&quot;weekly_icu_admissions&quot;	TEXT,
+	&quot;weekly_icu_admissions_per_million&quot;	TEXT,
+	&quot;weekly_hosp_admissions&quot;	TEXT,
+	&quot;weekly_hosp_admissions_per_million&quot; TEXT
+	);
+
+-- Inserting data from the orginial table to the new table, altering data format
+
+INSERT INTO CovidDeaths1
+SELECT iso_code	, continent	,
+	&quot;location&quot;	,
+	date(substr(date, 7, 4) || '-' || substr(date, 4, 2) || '-' || substr(date, 1, 2)),
+	population,
+	total_cases,
+	new_cases,
+	new_cases_smoothed,
+	total_deaths,
+	new_deaths,
+	new_deaths_smoothed,
+	total_cases_per_million,
+	new_cases_per_million,
+	new_cases_smoothed_per_million,
+	total_deaths_per_million,
+	new_deaths_per_million,
+	new_deaths_smoothed_per_million,
+	reproduction_rate,
+	icu_patients,
+	icu_patients_per_million,
+	hosp_patients,
+	hosp_patients_per_million,
+	weekly_icu_admissions,
+    weekly_icu_admissions_per_million,
+	weekly_hosp_admissions,
+	weekly_hosp_admissions_per_million
+FROM CovidDeaths;	
+
+-- Creating a second table, having 'Date' column with the correct data type
+
+DROP TABLE IF EXISTS CovidVaccinations1;
+CREATE TABLE &quot;CovidVaccinations1&quot; (
+	&quot;iso_code&quot;	TEXT,
+	&quot;continent&quot;	TEXT,
+	&quot;location&quot;	TEXT,
+	&quot;date&quot;	DATE,
+	&quot;new_tests&quot;	REAL,
+	&quot;total_tests&quot;	REAL,
+	&quot;total_tests_per_thousand&quot;	REAL,
+	&quot;new_tests_per_thousand&quot;	REAL,
+	&quot;new_tests_smoothed&quot;	TEXT,
+	&quot;new_tests_smoothed_per_thousand&quot;	TEXT,
+	&quot;positive_rate&quot;	TEXT,
+	&quot;tests_per_case&quot;	TEXT,
+	&quot;tests_units&quot;	TEXT,
+	&quot;total_vaccinations&quot;	REAL,
+	&quot;people_vaccinated&quot;	REAL,
+	&quot;people_fully_vaccinated&quot;	REAL,
+	&quot;new_vaccinations&quot;	INTEGER,
+	&quot;new_vaccinations_smoothed&quot;	TEXT,
+	&quot;total_vaccinations_per_hundred&quot;	TEXT,
+	&quot;people_vaccinated_per_hundred&quot;	TEXT,
+	&quot;people_fully_vaccinated_per_hundred&quot;	TEXT,
+	&quot;new_vaccinations_smoothed_per_million&quot;	TEXT,
+	&quot;stringency_index&quot;	REAL,
+	&quot;population_density&quot;	REAL,
+	&quot;median_age&quot;	REAL,
+	&quot;aged_65_older&quot;	REAL,
+	&quot;aged_70_older&quot;	REAL,
+	&quot;gdp_per_capita&quot;	REAL,
+	&quot;extreme_poverty&quot;	TEXT,
+	&quot;cardiovasc_death_rate&quot;	REAL,
+	&quot;diabetes_prevalence&quot;	REAL,
+	&quot;female_smokers&quot;	TEXT,
+	&quot;male_smokers&quot;	TEXT,
+	&quot;handwashing_facilities&quot;	REAL,
+	&quot;hospital_beds_per_thousand&quot;	REAL,
+	&quot;life_expectancy&quot;	REAL,
+	&quot;human_development_index&quot;	REAL
+ );
+
+ -- Inserting data from the orginial table to the new table, altering data format
+ 
+INSERT INTO CovidVaccinations1
+SELECT iso_code,
+	continent,
+	location,
+	date(substr(date, 7, 4) || '-' || substr(date, 4, 2) || '-' || substr(date, 1, 2)),
+	new_tests,
+	total_tests,
+	total_tests_per_thousand,
+	new_tests_per_thousand,
+	new_tests_smoothed,
+	new_tests_smoothed_per_thousand,
+	positive_rate,
+	tests_per_case,
+	tests_units,
+	total_vaccinations,
+	people_vaccinated,
+	people_fully_vaccinated,
+	new_vaccinations,
+	new_vaccinations_smoothed,
+	total_vaccinations_per_hundred,
+	people_vaccinated_per_hundred,
+	people_fully_vaccinated_per_hundred,
+	new_vaccinations_smoothed_per_million,
+	stringency_index,
+	population_density,
+	median_age,
+	aged_65_older,
+	aged_70_older,
+	gdp_per_capita,
+	extreme_poverty,
+	cardiovasc_death_rate,
+	diabetes_prevalence,
+	female_smokers,
+	male_smokers,
+	handwashing_facilities,
+	hospital_beds_per_thousand,
+	life_expectancy,
+	human_development_index
+FROM CovidVaccinations;
+
+-- Select Data that we are going to be starting with
+
+SELECT location, date, total_cases, new_cases, total_deaths, population
+FROM CovidDeaths1
+WHERE continent IS NOT NULL
+ORDER BY 1,2;
+
+-- Total Cases vs Total Deaths
+-- Shows likelihood of dying if you contract covid in your country
+
+SELECT Location, date, total_cases,total_deaths, ROUND((total_deaths/total_cases)*100,2) as DeathPercentage
+FROM CovidDeaths1
+WHERE location LIKE '%states%' AND continent IS NOT NULL
+ORDER BY 1,2;
+
+
+-- Total Cases vs Population
+-- Shows what percentage of population infected with Covid
+
+SELECT location, date, population, total_cases,  ROUND((total_cases/population)*100,2) as PercentPopulationInfected
+FROM CovidDeaths1
+ORDER BY 1,2;
+
+
+-- Countries with Highest Infection Rate compared to Population
+
+SELECT location, population, MAX(total_cases) as HighestInfectionCount,  MAX((total_cases/population))*100 as PercentPopulationInfected
+FROM CovidDeaths1
+GROUP BY location, population
+ORDER BY PercentPopulationInfected DESC;
+
+
+-- Countries with Highest Death Count per Population
+
+SELECT location, MAX(total_deaths) as TotalDeathCount
+FROM CovidDeaths1
+WHERE continent IS NOT NULL
+GROUP BY Location
+ORDER BY TotalDeathCount DESC;
+
+
+-- BREAKING THINGS DOWN BY CONTINENT
+
+-- Showing contintents with the highest death count per population
+
+SELECT continent, MAX(Total_deaths) as TotalDeathCount
+FROM CovidDeaths1
+WHERE continent IS NOT NULL 
+Group by continent
+ORDER BY TotalDeathCount DESC;
+
+
+-- GLOBAL NUMBERS
+
+SELECT date, SUM(new_cases) as total_cases, SUM(new_deaths) as total_deaths, ROUND(SUM(new_deaths)/SUM(new_cases)*100,6) as DeathPercentage
+FROM CovidDeaths1
+WHERE continent IS NOT NULL
+Group BY date
+ORDER BY 1,2;
+
+
+-- Total Population vs Vaccinations
+-- Shows Percentage of Population that has recieved at least one Covid Vaccine
+
+-- USING CTE
+WITH PopvsVac(continent, location, date, population, new_vaccination, RollingPeopleVaccinated) AS
+(
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+		SUM(vac.new_vaccinations) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) as RollingPeopleVaccinated
+ -- , (RollingPeopleVaccinated/population)*100
+FROM CovidDeaths1 dea
+INNER JOIN CovidVaccinations1 vac
+	ON dea.location = vac.location
+	AND dea.date = vac.date
+WHERE dea.continent IS NOT NULL
+ORDER BY 2,3
+)
+SELECT * , (RollingPeopleVaccinated /population)*100 as '%Population_Vaccinated ' 
+FROM PopvsVac;
+
+-- USING TEMPORARY TABLE 
+DROP TABLE IF EXISTS PercentPopulationVaccinated;
+CREATE TEMPORARY TABLE PercentPopulationVaccinated
+(
+	continent TEXT,
+	location TEXT, 
+	date DATE,
+	population NUMERIC,
+	new_vaccinations NUMERIC,
+	rollingPeopleVaccinated NUMERIC
+);
+INSERT INTO PercentPopulationVaccinated
+	SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+			SUM(vac.new_vaccinations) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) as RollingPeopleVaccinated
+	 -- , (RollingPeopleVaccinated/population)*100
+	FROM CovidDeaths1 dea
+	INNER JOIN CovidVaccinations1 vac
+		ON dea.location = vac.location
+		AND dea.date = vac.date
+	WHERE dea.continent IS NOT NULL;
+	
+SELECT * , (rollingPeopleVaccinated /population)*100 as '%Population_Vaccinated ' 
+FROM PercentPopulationVaccinated;
+
+
+-- CREATING VIEW for Later Visualisation
+
+CREATE VIEW PercentPopulationVaccinated AS 
+		SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+			SUM(vac.new_vaccinations) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) as RollingPeopleVaccinated
+	 -- , (RollingPeopleVaccinated/population)*100
+	FROM CovidDeaths1 dea
+	INNER JOIN CovidVaccinations1 vac
+		ON dea.location = vac.location
+		AND dea.date = vac.date
+	WHERE dea.continent IS NOT NULL
+	
+
+
+</sql><current_tab id="0"/></tab_sql></sqlb_project>
