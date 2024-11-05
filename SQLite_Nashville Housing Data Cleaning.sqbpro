@@ -1,191 +1,374 @@
-<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="SQLite_Nashville Housing Data Cleaning.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="2675"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="NashvilleHousing" custom_title="0" dock_id="1" table="4,16:mainNashvilleHousing"/><dock_state state="000000ff00000000fd00000001000000020000087f000004f6fc0100000001fb000000160064006f0063006b00420072006f007700730065003101000000000000087f0000013400ffffff000002590000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="NashvilleHousing" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort><column index="16" mode="0"/></sort><column_widths><column index="1" value="61"/><column index="2" value="132"/><column index="3" value="173"/><column index="4" value="300"/><column index="5" value="198"/><column index="6" value="70"/><column index="7" value="132"/><column index="8" value="84"/><column index="9" value="300"/><column index="10" value="300"/><column index="11" value="53"/><column index="12" value="202"/><column index="13" value="66"/><column index="14" value="85"/><column index="15" value="67"/><column index="16" value="59"/><column index="17" value="173"/><column index="18" value="54"/><column index="19" value="219"/><column index="20" value="210"/><column index="21" value="117"/><column index="22" value="210"/><column index="23" value="81"/><column index="24" value="117"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1*">/* 
-Project: Cleaning Data using SQL Queries in SQLite 
-
-Skills Used: Case Statement, CTE, Self-Join, Standardise Date and Extract Address using SSUBSTR and INSTR, 
-				Aggregrate Functions, Delete rows using Unique RowId.
-				
-Files Used: NashvilleHousing
-*/
-
-	
--- Standardising Date from &quot;Month dd, yyyy&quot; format to &quot;yyyy-mm-dd&quot; format
-	
-UPDATE NashvilleHousing
-SET SaleDate = 
-    SUBSTR(SaleDate, INSTR(SaleDate, ',') + 2, 4) || '-' ||  
-	-- Extracts the year: Locating the position of the comma and add 2 to get the position of the first number of year
-	
-    CASE 
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'January' THEN '01'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'February' THEN '02'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'March' THEN '03'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'April' THEN '04'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'May' THEN '05'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'June' THEN '06'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'July' THEN '07'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'August' THEN '08'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'September' THEN '09'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'October' THEN '10'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'November' THEN '11'
-        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'December' THEN '12'
-    END || '-' || 
-	-- Extract the month: Locating the location of the first space and deducting 1 to get the ending position of the month portion
-    
-	SUBSTR(SaleDate, INSTR(SaleDate, ' ') + 1, INSTR(SaleDate, ',') - INSTR(SaleDate, ' ') - 1); 
-	-- Extract the day: Locating the position of the space +1 and determining the difference between the space and comma - 1 to get the steps
-	
-	
--- Populate Property Address 
-
-SELECT n1.ParcelID, n1.PropertyAddress, n2.ParcelID, n2.PropertyAddress, IFNULL(n1.PropertyAddress,n2.PropertyAddress)
-FROM NashvilleHousing n1
-JOIN NashvilleHousing n2 
-	ON n1.ParcelID = n2.ParcelID
-	AND n1.UniqueID != n2.UniqueID
-WHERE n1.PropertyAddress IS NULL ;
-
-UPDATE NashvilleHousing
-SET PropertyAddress = 
-	(SELECT n2.PropertyAddress
-	FROM NashvilleHousing n1
-	JOIN NashvilleHousing n2 
-	ON n1.ParcelID = n2.ParcelID
-	AND n1.UniqueID != n2.UniqueID
-	WHERE n1.PropertyAddress IS NULL
-	LIMIT 1
-	)
-WHERE PropertyAddress IS NULL;
-
-
--- Breaking Address into Individual Column (Address, City, State) using Substring
--- Address example: 109  CEDAR PLACE BND, NASHVILLE
-
-SELECT SUBSTR(PropertyAddress, 1, INSTR(PropertyAddress, ',') - 1 ) AS Address , 
-	   SUBSTR(PropertyAddress, INSTR(PropertyAddress, ',')+2) AS City
-FROM NashvilleHousing;
-
--- Add new column and update table by extracting address from &quot;PropertyAddress&quot; column
-ALTER TABLE NashvilleHousing
-ADD Property_Split_Address TEXT; 
-
-UPDATE NashvilleHousing
-SET Property_Split_Address =  SUBSTR(PropertyAddress, 1, INSTR(PropertyAddress, ',') - 1 );
-
-
--- Add new column and update table by extracting city from &quot;PropertyAddress&quot; column
-ALTER TABLE NashvilleHousing
-ADD Property_City TEXT;
-
-UPDATE NashvilleHousing
-SET Property_City =  SUBSTR(PropertyAddress, INSTR(PropertyAddress, ',')+2);
-
-
--- Breaking Owner's Address into Individual Column
--- Using Common Table Expression (CTE)
-
-WITH extractOwnerAddress AS (
-	SELECT 
-	OwnerAddress AS Full_address,
-	SUBSTR(OwnerAddress, 1, INSTR(OwnerAddress, ',') - 1) AS street_Owner,
-	SUBSTR(OwnerAddress, INSTR(OwnerAddress, ',') + 2, INSTR(SUBSTR(OwnerAddress, INSTR(OwnerAddress, ',') + 2), ',') - 1) AS city_Owner,
-	SUBSTR(OwnerAddress, LENGTH(OwnerAddress) -1, 2) AS state_Owner
-	FROM NashvilleHousing
-)
-SELECT Full_address, street_Owner, city_Owner, state_Owner
-FROM extractOwnerAddress;
-
--- Add new column and update table by extracting address from &quot;OwnerAddress&quot; column
-ALTER TABLE NashvilleHousing
-ADD Owner_Street TEXT;
-
-ALTER TABLE NashvilleHousing
-ADD Owner_City TEXT;
-
-ALTER TABLE NashvilleHousing
-ADD Owner_State TEXT ;  
-
-UPDATE NashvilleHousing
-SET Owner_Street =  SUBSTR(OwnerAddress, 1, INSTR(OwnerAddress, ',') - 1);
-
-UPDATE NashvilleHousing
-SET Owner_City =  SUBSTR(OwnerAddress, INSTR(OwnerAddress, ',') + 2, INSTR(SUBSTR(OwnerAddress, INSTR(OwnerAddress, ',') + 2), ',') - 1);
-
-UPDATE NashvilleHousing
-SET Owner_State =  SUBSTR(OwnerAddress, LENGTH(OwnerAddress) -1, 2);
-
-
--- Standardise Y and N to Yes and NO in &quot;Sold as Vacant&quot; COLUMN
-Select DISTINCT(SoldAsVacant), COUNT(SoldAsVacant)
-FROM NashvilleHousing
-GROUP BY SoldAsVacant
-ORDER BY 2 DESC;
-
-SELECT SoldAsVacant,
-	CASE 
-		WHEN SoldAsVacant = 'Y' THEN 'Yes' 
-		WHEN SoldAsVacant = 'N' THEN 'No' 
-		ELSE 
-		SoldAsVacant
-	END	
-FROM NashvilleHousing;
-
-UPDATE NashvilleHousing
-SET SoldAsVacant = 
-	CASE 
-		WHEN SoldAsVacant = 'Y' THEN 'Yes' 
-		WHEN SoldAsVacant = 'N' THEN 'No' 
-		ELSE 
-		SoldAsVacant
-	END	;
-	
-	
--- Remove Duplicates using CTE 
--- Checking Duplicates using multiple criteria
-WITH row_numCTE AS (
-SELECT *, ROW_NUMBER()
-			  OVER(PARTITION BY ParcelID, 
-								PropertyAddress,
-								SalePrice,
-								SaleDate,
-								LegalReference
-								ORDER BY UniqueID) row_num
-FROM NashvilleHousing
-
-)
-SELECT *
-FROM row_numCTE 
-WHERE row_num &gt; 1;
-
--- Delete duplicates using unique rowid and CTE
-WITH row_numCTE AS (
-    SELECT 
-        ROWID AS rowid,  -- Keep track of the row to delete
-        ROW_NUMBER() OVER (
-            PARTITION BY ParcelID, 
-						 PropertyAddress, 
-						 SalePrice, 
-						 SaleDate, 
-						 LegalReference
-						 ORDER BY UniqueID
-        ) AS row_num
-    FROM NashvilleHousing
-)
-DELETE FROM NashvilleHousing
-WHERE ROWID IN (
-				SELECT rowid 
-				FROM row_numCTE 
-				WHERE row_num &gt; 1
-);
-
-
--- Remove Unsed Columns 
-ALTER TABLE NashvilleHousing
-DROP COLUMN OwnerAddress;
-
-ALTER TABLE NashvilleHousing
-DROP COLUMN TaxDistrict;
-
-ALTER TABLE NashvilleHousing
-DROP COLUMN PropertyAddress;
-
-</sql><current_tab id="0"/></tab_sql></sqlb_project>
+/* 
+
+Project: Cleaning Data using SQL Queries in SQLite 
+
+Skills Used: Case Statement, CTE, Self-Join, Standardise Date and Extract Address using SSUBSTR and INSTR, 
+
+				Aggregrate Functions, Delete rows using Unique RowId.
+				
+Files Used: NashvilleHousing
+
+*/
+
+
+
+	
+-- Standardising Date from &quot;Month dd, yyyy&quot; format to &quot;yyyy-mm-dd&quot; format
+
+	
+
+UPDATE NashvilleHousing
+
+SET SaleDate = 
+
+    SUBSTR(SaleDate, INSTR(SaleDate, ',') + 2, 4) || '-' ||  
+
+	-- Extracts the year: Locating the position of the comma and add 2 to get the position of the first number of year
+
+	
+
+    CASE 
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'January' THEN '01'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'February' THEN '02'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'March' THEN '03'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'April' THEN '04'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'May' THEN '05'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'June' THEN '06'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'July' THEN '07'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'August' THEN '08'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'September' THEN '09'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'October' THEN '10'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'November' THEN '11'
+
+        WHEN SUBSTR(SaleDate, 1, INSTR(SaleDate, ' ') - 1) = 'December' THEN '12'
+
+    END || '-' || 
+
+	-- Extract the month: Locating the location of the first space and deducting 1 to get the ending position of the month portion
+
+    
+
+	SUBSTR(SaleDate, INSTR(SaleDate, ' ') + 1, INSTR(SaleDate, ',') - INSTR(SaleDate, ' ') - 1); 
+
+	-- Extract the day: Locating the position of the space +1 and determining the difference between the space and comma - 1 to get the steps
+
+	
+
+	
+
+-- Populate Property Address 
+
+
+SELECT n1.ParcelID, n1.PropertyAddress, n2.ParcelID, n2.PropertyAddress, IFNULL(n1.PropertyAddress,n2.PropertyAddress)
+
+FROM NashvilleHousing n1
+
+JOIN NashvilleHousing n2 
+
+	ON n1.ParcelID = n2.ParcelID
+
+	AND n1.UniqueID != n2.UniqueID
+
+WHERE n1.PropertyAddress IS NULL ;
+
+
+
+UPDATE NashvilleHousing
+
+SET PropertyAddress = 
+
+	(SELECT n2.PropertyAddress
+
+	FROM NashvilleHousing n1
+
+	JOIN NashvilleHousing n2 
+
+	ON n1.ParcelID = n2.ParcelID
+
+	AND n1.UniqueID != n2.UniqueID
+
+	WHERE n1.PropertyAddress IS NULL
+
+	LIMIT 1
+
+	)
+
+WHERE PropertyAddress IS NULL;
+
+
+
+
+
+-- Breaking Address into Individual Column (Address, City, State) using Substring
+
+-- Address example: 109  CEDAR PLACE BND, NASHVILLE
+
+
+
+SELECT SUBSTR(PropertyAddress, 1, INSTR(PropertyAddress, ',') - 1 ) AS Address , 
+
+	   SUBSTR(PropertyAddress, INSTR(PropertyAddress, ',')+2) AS City
+
+FROM NashvilleHousing;
+
+
+
+-- Add new column and update table by extracting address from &quot;PropertyAddress&quot; column
+
+ALTER TABLE NashvilleHousing
+
+ADD Property_Split_Address TEXT; 
+
+
+
+UPDATE NashvilleHousing
+
+SET Property_Split_Address =  SUBSTR(PropertyAddress, 1, INSTR(PropertyAddress, ',') - 1 );
+
+
+
+
+
+-- Add new column and update table by extracting city from &quot;PropertyAddress&quot; column
+
+ALTER TABLE NashvilleHousing
+
+ADD Property_City TEXT;
+
+
+
+UPDATE NashvilleHousing
+
+SET Property_City =  SUBSTR(PropertyAddress, INSTR(PropertyAddress, ',')+2);
+
+
+
+
+
+-- Breaking Owner's Address into Individual Column
+
+-- Using Common Table Expression (CTE)
+
+
+
+WITH extractOwnerAddress AS (
+
+	SELECT 
+
+	OwnerAddress AS Full_address,
+
+	SUBSTR(OwnerAddress, 1, INSTR(OwnerAddress, ',') - 1) AS street_Owner,
+
+	SUBSTR(OwnerAddress, INSTR(OwnerAddress, ',') + 2, INSTR(SUBSTR(OwnerAddress, INSTR(OwnerAddress, ',') + 2), ',') - 1) AS city_Owner,
+
+	SUBSTR(OwnerAddress, LENGTH(OwnerAddress) -1, 2) AS state_Owner
+
+	FROM NashvilleHousing
+
+)
+
+SELECT Full_address, street_Owner, city_Owner, state_Owner
+
+FROM extractOwnerAddress;
+
+
+
+-- Add new column and update table by extracting address from &quot;OwnerAddress&quot; column
+
+ALTER TABLE NashvilleHousing
+
+ADD Owner_Street TEXT;
+
+
+
+ALTER TABLE NashvilleHousing
+
+ADD Owner_City TEXT;
+
+
+
+ALTER TABLE NashvilleHousing
+
+ADD Owner_State TEXT ;  
+
+
+
+UPDATE NashvilleHousing
+
+SET Owner_Street =  SUBSTR(OwnerAddress, 1, INSTR(OwnerAddress, ',') - 1);
+
+
+
+UPDATE NashvilleHousing
+
+SET Owner_City =  SUBSTR(OwnerAddress, INSTR(OwnerAddress, ',') + 2, INSTR(SUBSTR(OwnerAddress, INSTR(OwnerAddress, ',') + 2), ',') - 1);
+
+
+
+UPDATE NashvilleHousing
+
+SET Owner_State =  SUBSTR(OwnerAddress, LENGTH(OwnerAddress) -1, 2);
+
+
+
+
+
+-- Standardise Y and N to Yes and NO in &quot;Sold as Vacant&quot; COLUMN
+
+Select DISTINCT(SoldAsVacant), COUNT(SoldAsVacant)
+
+FROM NashvilleHousing
+
+GROUP BY SoldAsVacant
+
+ORDER BY 2 DESC;
+
+
+
+SELECT SoldAsVacant,
+
+	CASE 
+
+		WHEN SoldAsVacant = 'Y' THEN 'Yes' 
+
+		WHEN SoldAsVacant = 'N' THEN 'No' 
+
+		ELSE 
+
+		SoldAsVacant
+
+	END	
+
+FROM NashvilleHousing;
+
+
+
+UPDATE NashvilleHousing
+
+SET SoldAsVacant = 
+
+	CASE 
+
+		WHEN SoldAsVacant = 'Y' THEN 'Yes' 
+
+		WHEN SoldAsVacant = 'N' THEN 'No' 
+
+		ELSE 
+
+		SoldAsVacant
+
+	END	;
+
+	
+
+	
+
+-- Remove Duplicates using CTE 
+
+-- Checking Duplicates using multiple criteria
+
+WITH row_numCTE AS (
+
+SELECT *, ROW_NUMBER()
+
+			  OVER(PARTITION BY ParcelID, 
+
+								PropertyAddress,
+
+								SalePrice,
+
+								SaleDate,
+
+								LegalReference
+
+								ORDER BY UniqueID) row_num
+
+FROM NashvilleHousing
+
+
+
+)
+
+SELECT *
+
+FROM row_numCTE 
+
+WHERE row_num &gt; 1;
+
+
+
+-- Delete duplicates using unique rowid and CTE
+
+WITH row_numCTE AS (
+
+    SELECT 
+
+        ROWID AS rowid,  -- Keep track of the row to delete
+
+        ROW_NUMBER() OVER (
+
+            PARTITION BY ParcelID, 
+
+						 PropertyAddress, 
+
+						 SalePrice, 
+
+						 SaleDate, 
+
+						 LegalReference
+
+						 ORDER BY UniqueID
+
+        ) AS row_num
+
+    FROM NashvilleHousing
+
+)
+
+DELETE FROM NashvilleHousing
+
+WHERE ROWID IN (
+
+				SELECT rowid 
+
+				FROM row_numCTE 
+
+				WHERE row_num &gt; 1
+
+);
+
+
+
+
+
+-- Remove Unsed Columns 
+
+ALTER TABLE NashvilleHousing
+
+DROP COLUMN OwnerAddress;
+
+
+
+ALTER TABLE NashvilleHousing
+
+DROP COLUMN TaxDistrict;
+
+
+
+ALTER TABLE NashvilleHousing
+
+DROP COLUMN PropertyAddress;
+
+
+
