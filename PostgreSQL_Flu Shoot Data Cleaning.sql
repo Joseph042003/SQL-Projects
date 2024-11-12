@@ -1,26 +1,6 @@
 /* 
-select description, count(*) as count_of_cond
-from public.conditions
-where description != 'Body Mass Index 30.0-30.9, adult'
-group by description
-having count(*) > 5000
-order by count(*) desc
-
-select * 
-from public.patients 
-where city = 'Boston'
-
-select * 
-from public.conditions
-where code in ('585.1' , '585.2' , '585.3' , '585.4'  )
-order by code 
-
-select city, count(*) as count_of_patient
-from public.patients
-where city != 'Boston'
-group by city 
-having count(*) >= 100
-order by city desc
+Project: Flu Shoot Data Cleaning in PostgreSQL
+Skills Used: CTEs, Aggregate Functions, Date Extration, Joining Tables
 */
 with flu_shot_2022 as (
 	
