@@ -1,3 +1,8 @@
+/*
+Project: Patient Satisfaction Survey Data Cleaning in PostgreSQL 
+Skilled Used: CTEs, JOIN, TO_DATE, CAST
+
+*/
 -- Checking the data after importing into Postgres
 --select *
 --from "postgres"."hospital_Data".hcahps_data
@@ -12,7 +17,7 @@ with hospital_beds_prep as
 select lpad(cast(provider_ccn as text),6,'0') as provider_ccn, -- convert to text and left padding number 0 until reaching 6 characters.
  	   hospital_name,
 	   to_date(fiscal_year_begin_date,'MM/DD/YYYY') as fiscal_year_begin_date, -- change the format of date from text to date 
-	   																		   -- and modify the date to MM/DD/YYYY format								  
+	   									   -- and modify the date to MM/DD/YYYY format								  
 	   to_date(fiscal_year_end_date,'MM/DD/YYYY') as fiscal_year_end_date,
 	   number_of_beds,
 	   -- assigning number to the hospitals that are reported more than once by the provider_cnn value, 
